@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة تدبُّر</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <img src="assets/logo.png" alt="شعار تدبُّر" class="logo-img">
+    </div>
+
+    <div class="screen active" id="step1">
+        <div class="step-badge">1</div>
+        <h2>بدء التحليل الذكي</h2>
+        <p>الدخول للتطبيق وتحديد صورة التلاوة لبدء التحليل الذكي بدقة عالية</p>
+        <div class="placeholder-box">📸 رفع صورة الصفحة</div>
+        <button class="btn" onclick="nextStep(2)">بدء التحليل</button>
+    </div>
+
+    <div class="screen" id="step2">
+        <div class="step-badge">2</div>
+        <h2>التسميع الصوتي</h2>
+        <p>التسميع الصوتي مع تحليل الأداء وتصحيح الأخطاء فورياً لتعزيز جودة التلاوة</p>
+        <div class="wave-visual">
+            <span></span><span></span><span></span><span class="error"></span><span></span>
+        </div>
+        <p class="status-text">جاري الاستماع...</p>
+        <button class="btn" onclick="nextStep(3)">متابعة</button>
+    </div>
+
+    <div class="screen" id="step3">
+        <div class="step-badge">3</div>
+        <h2>لغة الإشارة</h2>
+        <p>إتاحة التسميع للصم والبكم بلغة الإشارة بدقة عالية وتفاعل مباشر</p>
+        <div class="placeholder-box">👋 الذكاء الاصطناعي يقرأ الإشارة</div>
+        <button class="btn" onclick="nextStep(4)">عرض النتائج</button>
+    </div>
+
+    <div class="screen" id="step4">
+        <div class="step-badge">4</div>
+        <h2>التقارير</h2>
+        <p>عرض تقارير تفصيلية توضح مستوى التقدم ونقاط التحسين عبر الزمن</p>
+        <div class="stats-box">
+            <div class="stat-bar"><div style="width:80%"></div></div>
+            <div class="stat-bar gold"><div style="width:60%"></div></div>
+        </div>
+        <button class="btn" onclick="nextStep(5)">التالي</button>
+    </div>
+
+    <div class="screen" id="step5">
+        <div class="step-badge">5</div>
+        <h2>الجداول</h2>
+        <p>إنشاء جداول تسميع مرنة تنظم الحفظ والمراجعة حسب وقت المستخدم</p>
+        <div class="calendar-grid">
+            <span></span><span></span><span></span><span></span>
+        </div>
+        <button class="btn" onclick="nextStep(6)">إنهاء وعرض الأثر</button>
+    </div>
+
+    <div class="screen" id="step6">
+        <h2 style="font-size: 2rem;">الأثر والنتائج</h2>
+        <p>النتائج المحققة عبر المنصة</p>
+        <div class="impact-grid">
+            <div class="card"><h3>70%</h3><p>حفظ أذكى</p><small>تمكين الصم والبكم</small></div>
+            <div class="card"><h3>60%</h3><p>تلاوة أدق</p><small>تقليل الأخطاء</small></div>
+            <div class="card"><h3>55%</h3><p>حفظ أعلى</p><small>زيادة الالتزام</small></div>
+            <div class="card"><h3>65%</h3><p>تدبر معزز</p><small>رفع جودة التفاعل</small></div>
+        </div>
+        <button class="btn" onclick="location.reload()">بداية جديدة</button>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
