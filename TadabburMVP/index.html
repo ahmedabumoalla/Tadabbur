@@ -6,73 +6,80 @@
     <title>منصة تدبُّر</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* إعدادات الحاوية والخطوط */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #eef2f6; /* لون خلفية عام للصفحة */
+        }
+
+        /* تنسيقات الصفحة 1 (الترحيب) */
+        #step1 {
+            justify-content: center; /* توسيط عمودي */
+            padding-bottom: 50px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* خلفية المسجد الشفافة */
+        .mosque-bg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* التأكد أن المحتوى فوق الخلفية */
+        #step1 > *:not(.mosque-bg) {
+            position: relative;
+            z-index: 1;
+        }
+
+        .welcome-logo {
+            width: 140px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-title {
+            font-size: 1.6rem;
+            color: #1F2937;
+            margin-bottom: 60px;
+            font-weight: 800;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 
 <div class="app-container">
-    <div class="header">
-        <img src="assets/logo.png" alt="شعار تدبُّر" class="logo-img">
-    </div>
-
+    
     <div class="screen active" id="step1">
-        <div class="step-badge">1</div>
-        <h2>بدء التحليل الذكي</h2>
-        <p>الدخول للتطبيق وتحديد صورة التلاوة لبدء التحليل الذكي بدقة عالية</p>
-        <div class="placeholder-box">📸 رفع صورة الصفحة</div>
-        <button class="btn" onclick="nextStep(2)">بدء التحليل</button>
+        <svg class="mosque-bg" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#0A74DA" fill-opacity="1" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,197.3C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            <path fill="#0A74DA" fill-opacity="0.5" d="M160,320 L160,250 C160,230 200,230 200,250 L200,320 Z M300,320 L300,180 L320,160 L340,180 L340,320 Z M450,320 L450,220 C450,200 500,200 500,220 L500,320 Z M800,320 L800,150 L820,130 L840,150 L840,320 Z M1100,320 L1100,240 C1100,210 1160,210 1160,240 L1160,320 Z" />
+        </svg>
+
+        <img src="assets/logo.png" alt="شعار تدبُّر" class="welcome-logo">
+        <h1 class="welcome-title">رحلة ذكية لحفظ القرآن الكريم</h1>
+        
+        <button class="btn" onclick="window.location.href='recitation.html'">ابدأ الآن</button>
     </div>
 
-    <div class="screen" id="step2">
-        <div class="step-badge">2</div>
-        <h2>التسميع الصوتي</h2>
-        <p>التسميع الصوتي مع تحليل الأداء وتصحيح الأخطاء فورياً لتعزيز جودة التلاوة</p>
-        <div class="wave-visual">
-            <span></span><span></span><span></span><span class="error"></span><span></span>
-        </div>
-        <p class="status-text">جاري الاستماع...</p>
-        <button class="btn" onclick="nextStep(3)">متابعة</button>
-    </div>
-
-    <div class="screen" id="step3">
-        <div class="step-badge">3</div>
-        <h2>لغة الإشارة</h2>
-        <p>إتاحة التسميع للصم والبكم بلغة الإشارة بدقة عالية وتفاعل مباشر</p>
-        <div class="placeholder-box">👋 الذكاء الاصطناعي يقرأ الإشارة</div>
-        <button class="btn" onclick="nextStep(4)">عرض النتائج</button>
-    </div>
-
-    <div class="screen" id="step4">
-        <div class="step-badge">4</div>
-        <h2>التقارير</h2>
-        <p>عرض تقارير تفصيلية توضح مستوى التقدم ونقاط التحسين عبر الزمن</p>
-        <div class="stats-box">
-            <div class="stat-bar"><div style="width:80%"></div></div>
-            <div class="stat-bar gold"><div style="width:60%"></div></div>
-        </div>
-        <button class="btn" onclick="nextStep(5)">التالي</button>
-    </div>
-
-    <div class="screen" id="step5">
-        <div class="step-badge">5</div>
-        <h2>الجداول</h2>
-        <p>إنشاء جداول تسميع مرنة تنظم الحفظ والمراجعة حسب وقت المستخدم</p>
-        <div class="calendar-grid">
-            <span></span><span></span><span></span><span></span>
-        </div>
-        <button class="btn" onclick="nextStep(6)">إنهاء وعرض الأثر</button>
-    </div>
-
-    <div class="screen" id="step6">
-        <h2 style="font-size: 2rem;">الأثر والنتائج</h2>
-        <p>النتائج المحققة عبر المنصة</p>
-        <div class="impact-grid">
-            <div class="card"><h3>70%</h3><p>حفظ أذكى</p><small>تمكين الصم والبكم</small></div>
-            <div class="card"><h3>60%</h3><p>تلاوة أدق</p><small>تقليل الأخطاء</small></div>
-            <div class="card"><h3>55%</h3><p>حفظ أعلى</p><small>زيادة الالتزام</small></div>
-            <div class="card"><h3>65%</h3><p>تدبر معزز</p><small>رفع جودة التفاعل</small></div>
-        </div>
-        <button class="btn" onclick="location.reload()">بداية جديدة</button>
-    </div>
 </div>
 
 <script src="app.js"></script>

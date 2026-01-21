@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مترجم الإشارة | تدبُّر</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* إعدادات الصفحة العامة */
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Tajawal', sans-serif;
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            background: #eef2f6;
+        }
+
+        .app-container {
+            width: 390px; height: 844px;
+            background: #F8FAFC;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            overflow: hidden; position: relative;
+            display: flex; flex-direction: column;
+        }
+
+        /* الرأس */
+        .header {
+            padding: 20px 25px;
+            background: #fff;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .header h2 { margin: 0; font-size: 1.2rem; color: #1F2937; }
+        .back-btn { text-decoration: none; font-size: 1.2rem; color: #333; }
+
+        /* منطقة المحتوى */
+        .content-area {
+            flex: 1; overflow-y: auto; padding: 20px;
+            padding-bottom: 90px; display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* قسم الفيديو الرئيسي (شخصية الذكاء الاصطناعي) */
+        .ai-video-section {
+            background: #fff; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative;
+        }
+        .ai-video-header {
+            padding: 10px 15px; background: linear-gradient(90deg, #0A74DA, #3B82F6);
+            color: #fff; font-size: 0.9rem; font-weight: bold; display: flex; align-items: center; gap: 8px;
+        }
+        .ai-icon { font-size: 1.2rem; }
+        
+        .main-video-wrapper {
+            width: 100%; height: 200px; background: #000; position: relative; overflow: hidden;
+        }
+        .video-placeholder {
+            width: 100%; height: 100%;
+            /* صورة شخصية سعودية كرتونية (أفاتار) توحي بالذكاء الاصطناعي */
+            background-image: url('https://cdn.dribbble.com/users/230290/screenshots/15293382/media/a6790647939149328717150381877681.jpg?compress=1&resize=800x600');
+            background-size: cover; background-position: center top;
+            transition: transform 0.3s;
+        }
+        .play-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 60px; height: 60px; background: rgba(255,255,255,0.85);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; color: #0A74DA; cursor: pointer; z-index: 2;
+        }
+
+        /* منطقة النص القرآني */
+        .quran-text-box {
+            background: #fff; padding: 25px 20px; border-radius: 20px;
+            text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.03); border: 2px solid #E5E7EB;
+        }
+        .surah-title {
+            font-family: 'Amiri', serif; color: #D97706; margin-bottom: 20px; display: inline-block;
+            border-bottom: 2px solid #FCD34D; padding-bottom: 5px;
+        }
+        .ayah-text {
+            font-family: 'Amiri', serif; font-size: 1.5rem; line-height: 2.6; color: #374151;
+        }
+
+        /* الكلمات التفاعلية (المميزة) */
+        .interactive-word {
+            color: #0A74DA; font-weight: bold; cursor: pointer;
+            border-bottom: 2px dotted #0A74DA; padding-bottom: 2px; transition: all 0.2s;
+        }
+        .interactive-word:hover { background: #EBF5FF; border-bottom-style: solid; }
+
+        /* النافذة المنبثقة (Modal) للتفسير */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 200;
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(3px);
+        }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease-out; }
+
+        .tafsir-popup {
+            background: #fff; width: 85%; border-radius: 25px; padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; position: relative;
+            transform: scale(0.9); transition: transform 0.2s;
+        }
+        .modal-overlay.active .tafsir-popup { transform: scale(1); }
+
+        .popup-word { font-family: 'Amiri', serif; font-size: 1.8rem; color: #0A74DA; margin: 10px 0; }
+        
+        /* حاوية الفيديو في النافذة المنبثقة */
+        .popup-video-container {
+            width: 100%; height: 160px; background: #000; border-radius: 15px;
+            margin: 15px 0; overflow: hidden; position: relative;
+        }
+        /* عنصر الفيديو الفعلي الذي سيتم تشغيله */
+        #popupVideoPlayer {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        
+        .popup-meaning { font-size: 1rem; color: #555; line-height: 1.6; margin-bottom: 20px; }
+        .btn-close-popup {
+            background: #F3F4F6; color: #374151; border: none; padding: 12px 30px;
+            border-radius: 50px; font-weight: bold; cursor: pointer; width: 100%;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* شريط التنقل السفلي */
+        .bottom-nav {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            height: 80px; background: #fff;
+            display: flex; justify-content: space-around; align-items: center;
+            border-radius: 30px 30px 0 0;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+            padding: 0 10px; z-index: 100;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-decoration: none; color: #9CA3AF; width: 50px;
+        }
+        .nav-icon { font-size: 1.4rem; margin-bottom: 2px; }
+        .nav-label { font-size: 0.65rem; font-weight: 500; }
+        .center-btn {
+            width: 65px; height: 65px; background: #1F2937; border-radius: 50%; margin-top: -40px;
+            display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.8rem; border: 6px solid #fff;
+            box-shadow: 0 10px 20px rgba(31, 41, 55, 0.3); text-decoration: none;
+        }
+        .nav-item.active { color: #0A74DA; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <a href="dashboard.html" class="back-btn">➜</a>
+        <h2>مترجم الإشارة</h2>
+        <div style="width: 20px;"></div>
+    </div>
+
+    <div class="content-area">
+        <div class="ai-video-section">
+            <div class="ai-video-header">
+                <span class="ai-icon">🤖</span> المساعد الذكي "تدبُّر AI" يشرح سورة الفاتحة
+            </div>
+            <div class="main-video-wrapper">
+                <div class="video-placeholder"></div>
+                <div class="play-overlay">▶</div>
+            </div>
+        </div>
+
+        <div class="quran-text-box">
+            <h3 class="surah-title">سورة الفاتحة</h3>
+            <div class="ayah-text">
+                بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ (1)
+                ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ (2)
+                ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ (3)
+                مَـٰلِكِ يَوْمِ ٱلدِّينِ (4)
+                إِيَّاكَ نَعْبُدُ وَإِيَّاكَ <span class="interactive-word" onclick="showTafsir('نستعين')">نَسْتَعِينُ</span> (5)
+                ٱهْدِنَا <span class="interactive-word" onclick="showTafsir('الصراط')">ٱلصِّرَٰطَ</span> ٱلْمُسْتَقِيمَ (6)
+                صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا <span class="interactive-word" onclick="showTafsir('الضالين')">ٱلضَّالِّينَ</span> (7)
+            </div>
+            <p style="font-size: 0.8rem; color: #999; margin-top: 15px;">(اضغط على الكلمات الملونة لعرض شرحها بالإشارة)</p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="tafsirModal">
+        <div class="tafsir-popup">
+            <h3 class="popup-word" id="modalWord">الكلمة</h3>
+            <div class="popup-video-container">
+                <video id="popupVideoPlayer" controls autoplay loop muted playsinline>
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            <p class="popup-meaning" id="modalMeaning">المعنى المختصر هنا...</p>
+            <button class="btn-close-popup" onclick="closeTafsir()">إغلاق</button>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="profile.html" class="nav-item"><span class="nav-icon">👤</span><span class="nav-label">حسابي</span></a>
+        <a href="results.html" class="nav-item"><span class="nav-icon">📊</span><span class="nav-label">النتائج</span></a>
+        <a href="recitation.html" class="center-btn" title="ابدأ التلاوة">📖</a>
+        <a href="sign.html" class="nav-item active"><span class="nav-icon">👐</span><span class="nav-label">إشارة</span></a>
+        <a href="activity.html" class="nav-item"><span class="nav-icon">📄</span><span class="nav-label">النشاط</span></a>
+    </div>
+
+</div>
+
+<script>
+    // دالة لإظهار نافذة التفسير وتعبئة بياناتها وتشغيل الفيديو
+    function showTafsir(word) {
+        const modal = document.getElementById('tafsirModal');
+        const modalWord = document.getElementById('modalWord');
+        const modalMeaning = document.getElementById('modalMeaning');
+        const videoPlayer = document.getElementById('popupVideoPlayer');
+
+        let meaningText = "";
+        // رابط فيديو عينة (يجب استبداله بفيديوهات لغة الإشارة الحقيقية لكل كلمة)
+        // هذا الرابط لفيديو قصير من Pexels للتجربة
+// هذا ليس توليداً، هذا استدعاء ذكي
+let videoSrc = "assets/signs/ai_generated_fatiha.mp4"; 
+// الفيديو هو في الحقيقة فيديو بشري تم تحويله بالذكاء الاصطناعي
+        if (word === 'نستعين') {
+            meaningText = "نطلب العون والمساعدة منك وحدك يا الله في كل أمورنا.";
+             // مثال: videoSrc = "assets/signs/nastaeen.mp4";
+        } else if (word === 'الصراط') {
+            meaningText = "الطريق المستقيم الواضح الذي لا اعوجاج فيه، وهو الإسلام.";
+             // مثال: videoSrc = "assets/signs/sirat.mp4";
+        } else if (word === 'الضالين') {
+            meaningText = "الذين انحرفوا عن طريق الحق والصواب.";
+             // مثال: videoSrc = "assets/signs/dalleen.mp4";
+        }
+
+        modalWord.innerText = word;
+        modalMeaning.innerText = meaningText;
+        
+        // تعيين مصدر الفيديو وتشغيله
+        videoPlayer.src = videoSrc;
+        videoPlayer.load(); // إعادة تحميل الفيديو لضمان التشغيل
+        
+        modal.classList.add('active');
+        
+        // محاولة تشغيل الفيديو (قد تتطلب تفاعل المستخدم في بعض المتصفحات)
+        videoPlayer.play().catch(error => {
+            console.log("Video autoplay failed, user interaction needed:", error);
+        });
+    }
+
+    // دالة إغلاق النافذة وإيقاف الفيديو
+    function closeTafsir() {
+        const modal = document.getElementById('tafsirModal');
+        const videoPlayer = document.getElementById('popupVideoPlayer');
+        
+        modal.classList.remove('active');
+        
+        // إيقاف الفيديو وإعادة تعيين المصدر
+        videoPlayer.pause();
+        videoPlayer.src = "";
+    }
+</script>
+
+</body>
+</html>
