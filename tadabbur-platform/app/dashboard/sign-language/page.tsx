@@ -5,10 +5,9 @@ import {
   Camera, ScanFace, CheckCircle, XCircle, Trophy,
   GraduationCap
 } from 'lucide-react';
-// 👇👇👇 تم إضافة هذا السطر لحل المشكلة 👇👇👇
 import { supabase } from '@/lib/supabaseClient';
 
-// === بيانات السور (القائمة الكاملة 114 سورة) ===
+// === بيانات السور ===
 const SURAHS = [
   { id: 1, name: "الفاتحة" }, { id: 2, name: "البقرة" }, { id: 3, name: "آل عمران" },
   { id: 4, name: "النساء" }, { id: 5, name: "المائدة" }, { id: 6, name: "الأنعام" },
@@ -51,19 +50,14 @@ const SURAHS = [
 ];
 
 export default function SignLanguagePage() {
-  // --- States ---
   const [selectedSurah, setSelectedSurah] = useState(SURAHS[0]);
   const [verses, setVerses] = useState<any[]>([]);
-  
-  // أوضاع الشاشة
   const [mode, setMode] = useState<'idle' | 'learning' | 'camera' | 'analyzing' | 'result'>('idle');
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   
-  // مرجع الفيديو
   const cameraRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<HTMLVideoElement>(null);
 
-  // --- 1. جلب الآيات ---
   useEffect(() => {
     const fetchVerses = async () => {
       try {
@@ -75,7 +69,6 @@ export default function SignLanguagePage() {
     fetchVerses();
   }, [selectedSurah]);
 
-  // --- 2. تشغيل الكاميرا ---
   const startCamera = async () => {
     setAnalysisResult(null);
     setMode('camera');
@@ -89,7 +82,6 @@ export default function SignLanguagePage() {
     }
   };
 
-  // --- 3. إيقاف الكاميرا وإرسال للتحليل ---
   const stopAndAnalyze = async () => {
     if (cameraRef.current && cameraRef.current.srcObject) {
       const tracks = (cameraRef.current.srcObject as MediaStream).getTracks();
@@ -114,7 +106,6 @@ export default function SignLanguagePage() {
       setAnalysisResult(data);
       setMode('result');
 
-      // 👇👇👇 حفظ النتيجة في قاعدة البيانات 👇👇👇
       const { data: { user } } = await supabase.auth.getUser();
       if (user && data.score) {
         await supabase.from('sign_language_sessions').insert({
@@ -132,10 +123,10 @@ export default function SignLanguagePage() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)] font-tajawal">
+    <div className="flex flex-col lg:flex-row gap-6 min-h-[calc(100vh-140px)] font-tajawal pb-10 lg:pb-0">
       
-      {/* ================= القسم الأيمن: منطقة التفاعل ================= */}
-      <div className="flex-1 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col relative overflow-hidden order-1 lg:order-2">
+      {/* ================= القسم الأول: منطقة التفاعل (تظهر أولاً في الجوال) ================= */}
+      <div className="w-full lg:flex-1 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col relative overflow-hidden order-1 lg:order-2 h-[500px] lg:h-auto shrink-0 lg:shrink">
         
         {/* رأس البطاقة */}
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-[#fdfbf7] shrink-0">
@@ -154,7 +145,6 @@ export default function SignLanguagePage() {
         {/* جسم المنطقة */}
         <div className="flex-1 bg-gray-50 relative flex flex-col items-center overflow-y-auto custom-scrollbar p-6">
           
-          {/* الحالة: المعلم الافتراضي */}
           {mode === 'learning' && (
             <div className="w-full h-full flex flex-col items-center justify-center animate-fade-in">
               {selectedSurah.id === 1 ? (
@@ -163,14 +153,10 @@ export default function SignLanguagePage() {
                       ref={avatarRef}
                       src="/videos/avatar-idle.mp4" 
                       className="w-full h-full object-contain"
-                      autoPlay 
-                      loop 
-                      muted 
-                      playsInline
+                      autoPlay loop muted playsInline
                     />
-                    <div className="absolute inset-0 bg-transparent pointer-events-none"></div>
-                    <div className="absolute bottom-6 left-0 right-0 text-center">
-                       <span className="bg-black/60 backdrop-blur-md text-white px-6 py-2 rounded-full text-sm font-amiri shadow-lg">
+                    <div className="absolute bottom-6 left-0 right-0 text-center px-2">
+                       <span className="bg-black/60 backdrop-blur-md text-white px-6 py-2 rounded-full text-xs md:text-sm font-amiri shadow-lg">
                           يتم الآن شرح سورة {selectedSurah.name}...
                        </span>
                     </div>
@@ -181,118 +167,82 @@ export default function SignLanguagePage() {
                     <Loader2 size={40} className="animate-spin-slow" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-800 mb-2">جاري تدريب المعلم</h3>
-                  <p className="text-gray-500 max-w-xs">
-                    المعلم الافتراضي متاح حالياً لسورة الفاتحة فقط. نعمل على تدريبه لباقي السور.
+                  <p className="text-gray-500 max-w-xs text-sm">
+                    المعلم الافتراضي متاح حالياً لسورة الفاتحة فقط.
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* الحالة: الكاميرا تعمل */}
           {mode === 'camera' && (
             <div className="w-full max-w-lg aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative border-4 border-[#0A74DA] my-auto">
               <video ref={cameraRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
-              <div className="absolute inset-0 bg-gradient-to-b from-[#0A74DA]/20 to-transparent animate-scan h-full w-full pointer-events-none"></div>
-              <div className="absolute top-4 right-4 bg-red-500 text-white text-xs px-2 py-1 rounded animate-pulse">REC ●</div>
+              <div className="absolute top-4 right-4 bg-red-500 text-white text-[10px] px-2 py-1 rounded animate-pulse">REC ●</div>
             </div>
           )}
 
-          {/* الحالة: جاري التحليل */}
           {mode === 'analyzing' && (
             <div className="flex flex-col items-center justify-center text-center my-auto">
-              <div className="relative">
-                <div className="w-24 h-24 border-4 border-gray-200 border-t-[#0A74DA] rounded-full animate-spin"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Sparkles className="text-[#0A74DA] animate-pulse" size={32} />
-                </div>
-              </div>
-              <h3 className="mt-6 text-xl font-bold text-gray-800">جاري تحليل الأداء...</h3>
+              <div className="w-16 h-16 border-4 border-gray-200 border-t-[#0A74DA] rounded-full animate-spin"></div>
+              <h3 className="mt-6 text-lg font-bold text-gray-800">جاري تحليل الأداء...</h3>
             </div>
           )}
 
-          {/* الحالة: عرض النتائج */}
-          {/* الحالة: عرض النتائج */}
-            {mode === 'result' && analysisResult && (
-              <div className="w-full max-w-2xl animate-fade-in-up space-y-6 pb-8">
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-2 h-full bg-[#0A74DA]"></div>
-                  <div>
-                    <h3 className="text-gray-500 text-sm mb-1">نتيجة التسميع</h3>
-                    <h2 className="text-2xl font-bold text-gray-800">{analysisResult.feedback_title || "تم التحليل بنجاح"}</h2>
-                  </div>
-                  <div className="relative w-20 h-20 flex items-center justify-center">
-                     <svg className="w-full h-full transform -rotate-90">
-                       <circle cx="40" cy="40" r="36" stroke="#f3f4f6" strokeWidth="8" fill="transparent" />
-                       <circle cx="40" cy="40" r="36" stroke={analysisResult.score > 80 ? "#22c55e" : "#eab308"} strokeWidth="8" fill="transparent" strokeDasharray={226} strokeDashoffset={226 - (226 * (analysisResult.score || 0)) / 100} />
-                     </svg>
-                     <span className="absolute text-xl font-bold text-gray-800">{analysisResult.score || 0}%</span>
-                  </div>
+          {mode === 'result' && analysisResult && (
+            <div className="w-full max-w-2xl animate-fade-in-up space-y-4 pb-4">
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-gray-500 text-xs mb-1">نتيجة التسميع</h3>
+                  <h2 className="text-lg font-bold text-gray-800">{analysisResult.feedback_title}</h2>
                 </div>
-                
-                {/* هنا التعديل المهم للحماية من الخطأ */}
-                <div className="grid gap-4">
-                  {(analysisResult.mistakes || []).length > 0 ? (
-                    (analysisResult.mistakes || []).map((mistake: any, idx: number) => (
-                      <div key={idx} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                        <div className="flex items-start gap-3">
-                          <div className="bg-red-50 p-2 rounded-lg text-red-500 mt-1 shrink-0"><XCircle size={20} /></div>
-                          <div>
-                            <h4 className="font-bold text-gray-800 text-sm">{mistake.aspect}</h4>
-                            <p className="text-gray-600 text-sm mb-2">{mistake.observation}</p>
-                            <div className="bg-green-50 text-green-700 text-xs p-2 rounded-lg flex gap-2">
-                               <CheckCircle size={14} className="shrink-0" /> {mistake.correction}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="bg-green-50 p-6 rounded-xl text-center border border-green-100">
-                        <CheckCircle className="mx-auto text-green-500 mb-2" size={32} />
-                        <p className="text-green-800 font-bold">أداء رائع! لا توجد أخطاء ملحوظة.</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100 flex gap-3">
-                   <Trophy className="text-[#0A74DA] shrink-0" size={24} />
-                   <div>
-                      <h4 className="font-bold text-[#0A74DA] mb-1">نصيحة المدرب</h4>
-                      <p className="text-sm text-gray-700">{analysisResult.advice || "استمر في التدريب لتحسين مستواك."}</p>
-                   </div>
+                <div className="relative w-14 h-14 flex items-center justify-center">
+                   <svg className="w-full h-full transform -rotate-90">
+                     <circle cx="28" cy="28" r="24" stroke="#f3f4f6" strokeWidth="4" fill="transparent" />
+                     <circle cx="28" cy="28" r="24" stroke={analysisResult.score > 80 ? "#22c55e" : "#eab308"} strokeWidth="4" fill="transparent" strokeDasharray={150} strokeDashoffset={150 - (150 * analysisResult.score) / 100} />
+                   </svg>
+                   <span className="absolute text-sm font-bold text-gray-800">{analysisResult.score}%</span>
                 </div>
               </div>
-            )}
+              
+              <div className="space-y-3">
+                {(analysisResult.mistakes || []).map((mistake: any, idx: number) => (
+                  <div key={idx} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-sm">
+                    <h4 className="font-bold text-gray-800 mb-1">{mistake.aspect}</h4>
+                    <p className="text-gray-600 mb-2 text-xs">{mistake.observation}</p>
+                    <div className="bg-green-50 text-green-700 text-[10px] p-2 rounded-lg flex gap-2">
+                       <CheckCircle size={12} className="shrink-0" /> {mistake.correction}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-          {/* الحالة الافتراضية */}
           {mode === 'idle' && (
-             <div className="text-center my-auto">
-               <div className="w-24 h-24 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                 <ScanFace size={48} />
+             <div className="text-center my-auto px-4">
+               <div className="w-20 h-20 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                 <ScanFace size={40} />
                </div>
-               <h3 className="text-xl font-bold text-gray-700 mb-2">منصة لغة الإشارة الذكية</h3>
-               <p className="text-gray-500 mb-8 max-w-xs mx-auto">
+               <h3 className="text-lg font-bold text-gray-700 mb-2">منصة لغة الإشارة الذكية</h3>
+               <p className="text-sm text-gray-500 max-w-xs mx-auto">
                  اختر "تعلم" لمشاهدة المعلم الافتراضي، أو "تسميع" لاختبار حفظك.
                </p>
              </div>
           )}
-
         </div>
 
         {/* شريط التحكم السفلي */}
-        <div className="p-6 bg-white border-t border-gray-100 flex flex-col sm:flex-row justify-center gap-4 shrink-0">
+        <div className="p-4 bg-white border-t border-gray-100 flex flex-row justify-center gap-3 shrink-0">
           {mode !== 'camera' && mode !== 'analyzing' && (
             <button 
               onClick={() => setMode(mode === 'learning' ? 'idle' : 'learning')}
-              className={`px-6 py-4 rounded-xl font-bold transition shadow-lg flex items-center justify-center gap-3 flex-1 ${
-                mode === 'learning' 
-                  ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  : "bg-white border-2 border-[#0A74DA] text-[#0A74DA] hover:bg-blue-50"
+              className={`px-4 py-3 rounded-xl font-bold text-sm transition shadow-sm flex items-center justify-center gap-2 flex-1 ${
+                mode === 'learning' ? "bg-gray-100 text-gray-700" : "bg-white border-2 border-[#0A74DA] text-[#0A74DA]"
               }`}
             >
-              <GraduationCap size={24} />
-              {mode === 'learning' ? "إغلاق المعلم" : "المعلم الافتراضي"}
+              <GraduationCap size={20} />
+              {mode === 'learning' ? "إغلاق" : "تعلم"}
             </button>
           )}
 
@@ -300,29 +250,26 @@ export default function SignLanguagePage() {
             mode === 'camera' ? (
               <button 
                 onClick={stopAndAnalyze}
-                className="bg-red-500 text-white px-6 py-4 rounded-xl font-bold hover:bg-red-600 transition shadow-lg flex items-center justify-center gap-3 flex-1 animate-pulse"
+                className="bg-red-500 text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-red-600 transition shadow-sm flex items-center justify-center gap-2 flex-1 animate-pulse"
               >
-                <ScanFace size={24} />
-                إنهاء وتحليل
+                <ScanFace size={20} /> إنهاء وتحليل
               </button>
             ) : (
               <button 
                 onClick={startCamera}
-                className="bg-[#0A74DA] text-white px-6 py-4 rounded-xl font-bold hover:bg-blue-600 transition shadow-lg flex items-center justify-center gap-3 flex-1"
+                className="bg-[#0A74DA] text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-blue-600 transition shadow-sm flex items-center justify-center gap-2 flex-1"
               >
-                <Camera size={24} />
-                {mode === 'result' ? "إعادة التسميع" : "بدء التسميع"}
+                <Camera size={20} /> {mode === 'result' ? "إعادة" : "تسميع"}
               </button>
             )
           )}
         </div>
-
       </div>
 
-      {/* ================= القسم الأيسر: المصحف ================= */}
-      <div className="w-full lg:w-96 flex flex-col gap-4 order-2 lg:order-1 h-full">
+      {/* ================= القسم الثاني: المصحف (يظهر ثانياً في الجوال) ================= */}
+      <div className="w-full lg:w-96 flex flex-col gap-4 order-2 lg:order-1 h-[500px] lg:h-auto shrink-0">
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 shrink-0">
-          <label className="text-sm font-bold text-gray-500 mb-2 block">السورة المراد تسميعها</label>
+          <label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">اختر السورة</label>
           <div className="relative">
             <select 
               className="w-full p-3 bg-gray-50 text-gray-900 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:border-[#0A74DA] font-amiri text-lg cursor-pointer"
@@ -332,41 +279,40 @@ export default function SignLanguagePage() {
               }}
               value={selectedSurah.id}
             >
-              {SURAHS.map(s => <option key={s.id} value={s.id} className="text-gray-900">{s.name}</option>)}
+              {SURAHS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+            <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col relative">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col relative min-h-0">
           <div className="p-4 border-b border-gray-100 bg-[#fdfbf7] flex justify-between items-center shrink-0">
-            <h3 className="font-bold text-gray-800 font-amiri flex items-center gap-2">
-              <BookOpen size={18} className="text-[#C89B3C]" />
-              نص سورة {selectedSurah.name}
+            <h3 className="font-bold text-gray-800 font-amiri flex items-center gap-2 text-base">
+              <BookOpen size={16} className="text-[#C89B3C]" /> نص سورة {selectedSurah.name}
             </h3>
-            <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded-md text-gray-500">{verses.length} آية</span>
+            <span className="text-[10px] bg-white border border-gray-200 px-2 py-1 rounded-md text-gray-500 font-bold">{verses.length} آية</span>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] bg-[#fdfbf7]">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] bg-[#fdfbf7]">
             {selectedSurah.id !== 9 && (
-              <div className="text-center mb-6 pt-2">
-                <p className="text-2xl font-amiri text-[#0A74DA] opacity-80">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</p>
+              <div className="text-center mb-4">
+                <p className="text-xl font-amiri text-[#0A74DA] opacity-80">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</p>
               </div>
             )}
-            <div className="font-amiri text-2xl md:text-3xl leading-[2.5] text-justify text-gray-800" dir="rtl">
+            <div className="font-amiri text-2xl leading-[2.2] text-justify text-gray-800" dir="rtl">
               {verses.map((verse, idx) => (
-                <span key={verse.id} className="px-1 rounded-lg hover:bg-gray-100/50 transition-colors">
-                  {verse.text_uthmani.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ ", "")}
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full text-lg mx-1 border-2 align-middle select-none font-tajawal border-[#C89B3C]/50 text-[#C89B3C]">{idx + 1}</span>{" "}
+                <span key={verse.id} className="px-1">
+                  {verse.text_uthmani.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ ", "")}
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full text-base mx-1 border align-middle font-tajawal border-[#C89B3C]/50 text-[#C89B3C]">{idx + 1}</span>{" "}
                 </span>
               ))}
             </div>
           </div>
           
           {(mode === 'camera' || mode === 'learning') && (
-             <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px] z-10 flex items-center justify-center">
-                <p className="bg-black/70 text-white px-4 py-2 rounded-full text-sm">
-                   {mode === 'camera' ? "حاول التسميع من الذاكرة" : "ركز مع حركة المعلم"}
+             <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px] z-10 flex items-center justify-center px-4">
+                <p className="bg-black/70 text-white px-4 py-2 rounded-full text-xs text-center">
+                   {mode === 'camera' ? "تسميع غيبي - النص محجوب" : "تابع حركة المعلم بدقة"}
                 </p>
              </div>
           )}
