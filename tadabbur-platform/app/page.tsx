@@ -187,7 +187,7 @@ export default function HomePage() {
               desc="تقنية ثورية تحول الآيات وتفسيرها إلى لغة إشارة مرئية لخدمة فئة الصم والبكم."
               icon={<Activity size={40} className="text-green-400" />}
               bg="bg-green-500/10"
-              link="/dashboard/sign"
+              link="/dashboard/sign-language"
             />
             <FeatureCard 
               title="المرشد القرآني AI" 
