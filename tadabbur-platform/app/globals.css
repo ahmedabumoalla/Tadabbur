@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  /* تعريف الألوان الخاصة بتدبر */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: #0A74DA;
+  --color-secondary: #C89B3C;
+
+  /* ربط الخطوط بمتغيرات Next.js */
+  --font-tajawal: var(--font-tajawal);
+  --font-amiri: var(--font-amiri);
+  
+  /* تعريف الخطوط كـ Utilities */
+  --font-sans: var(--font-tajawal), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-amiri), ui-serif, Georgia, serif;
+}
+
+/* إعدادات المتغيرات (الأوضاع الفاتحة والداكنة) */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --font-tajawal: 'Tajawal', sans-serif;
+  --font-amiri: 'Amiri', serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+/* التنسيقات العامة */
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-tajawal);
+}
+
+/* تنسيقات إضافية */
+.font-amiri {
+  font-family: var(--font-amiri);
+}
