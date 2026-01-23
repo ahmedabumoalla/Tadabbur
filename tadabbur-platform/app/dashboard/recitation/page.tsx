@@ -235,6 +235,9 @@ export default function RecitationPage() {
     }
   };
 
+  // داخل ملف RecitationPage
+// ابحث عن دالة stopRecording وقم بتحديث جزء إرسال البيانات (aiResponse) كالتالي:
+
   const stopRecording = async () => {
     if (!mediaRecorderRef.current) return;
 
@@ -242,72 +245,63 @@ export default function RecitationPage() {
     setIsProcessing(true);
 
     mediaRecorderRef.current.stop();
+    // إيقاف التعرف على الصوت لضمان الحصول على النص النهائي
     if (recognitionRef.current) recognitionRef.current.stop();
 
     mediaRecorderRef.current.onstop = async () => {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       
-      if (audioBlob.size < 1000) {
-        alert("التسجيل قصير جداً، يرجى المحاولة مرة أخرى.");
-        setIsProcessing(false);
-        return;
-      }
+      // ننتظر قليلاً للتأكد من أن تقنية التعرف على الكلام (Transcript) انتهت من المعالجة
+      setTimeout(async () => {
+        try {
+          const finalTranscript = transcript.trim();
+          
+          // إذا كان النص فارغاً، نخبر المستخدم بدلاً من إعطاء نتيجة وهمية
+          if (!finalTranscript || finalTranscript === "") {
+            setFeedback({
+              score: 0,
+              status: "error",
+              mistakes: [{ word: "تنبيه", type: "صوت غير مسموع", advice: "لم أستطع سماع تلاوتك بوضوح، يرجى المحاولة مرة أخرى في مكان هادئ." }]
+            });
+            setIsProcessing(false);
+            return;
+          }
 
-      try {
-        console.log("Uploading audio...");
-        const fileName = `${Date.now()}_recitation.webm`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('recitations')
-          .upload(fileName, audioBlob);
-
-        if (uploadError) throw new Error("فشل رفع الملف الصوتي");
-
-        const { data: urlData } = supabase.storage.from('recitations').getPublicUrl(fileName);
-        const publicUrl = urlData.publicUrl;
-
-        console.log("Analyzing text...");
-        const textToAnalyze = transcript.trim() || "لم يتم التقاط صوت واضح";
-        const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
-        
-        const aiResponse = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            type: 'analysis',
-            userText: textToAnalyze, 
-            originalVerse: pageText 
-          }),
-        });
-
-        if (!aiResponse.ok) throw new Error("فشل الاتصال بالذكاء الاصطناعي");
-
-        const analysisResult = await aiResponse.json();
-        setFeedback(analysisResult);
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from('recitations').insert({
-            user_id: user.id,
-            surah_name: currentSurah.name,
-            verse_number: (currentPage - 1) * VERSES_PER_PAGE + 1,
-            audio_url: publicUrl,
-            ai_score: analysisResult.score || 0,
-            ai_feedback: JSON.stringify(analysisResult)
+          const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
+          
+          const aiResponse = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              type: 'analysis',
+              userText: finalTranscript, // إرسال ما قاله المستخدم فعلياً
+              originalVerse: pageText 
+            }),
           });
-        }
 
-      } catch (error: any) {
-        console.error("Process Error:", error);
-        alert(`حدث خطأ: ${error.message}`);
-        setFeedback({ 
-          score: 0, 
-          status: "error", 
-          mistakes: [{ word: "خطأ", type: "تقني", advice: "تأكد من الاتصال بالإنترنت" }] 
-        });
-      } finally {
-        setIsProcessing(false);
-      }
+          if (!aiResponse.ok) throw new Error("فشل الاتصال بالذكاء الاصطناعي");
+
+          const analysisResult = await aiResponse.json();
+          setFeedback(analysisResult);
+
+          // حفظ البيانات في Supabase (نفس الكود الحالي)
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('recitations').insert({
+              user_id: user.id,
+              surah_name: currentSurah.name,
+              verse_number: (currentPage - 1) * VERSES_PER_PAGE + 1,
+              ai_score: analysisResult.score || 0,
+              ai_feedback: JSON.stringify(analysisResult)
+            });
+          }
+        } catch (error: any) {
+          console.error("Process Error:", error);
+          alert(`حدث خطأ أثناء التحليل: ${error.message}`);
+        } finally {
+          setIsProcessing(false);
+        }
+      }, 500); // تأخير 500ms لضمان استلام النص
     };
   };
 
@@ -536,27 +530,42 @@ export default function RecitationPage() {
              </div>
           )}
 
-          {feedback && (
-            <div className="w-full animate-fade-in-up">
-              <div className="relative w-32 h-32 mx-auto mb-4 flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle cx="64" cy="64" r="60" stroke="#f3f4f6" strokeWidth="8" fill="transparent" />
-                  <circle 
-                    cx="64" cy="64" r="60" stroke={feedback.score > 90 ? "#22c55e" : "#eab308"} strokeWidth="8" fill="transparent" 
-                    strokeDasharray={377} strokeDashoffset={377 - (377 * (feedback.score || 0)) / 100}
-                    className="transition-all duration-1000 ease-out"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-extrabold text-gray-800">{feedback.score}%</span>
-                  <span className="text-xs text-gray-500">الدقة</span>
-                </div>
-              </div>
-              <div className={`p-3 rounded-xl mb-4 text-sm font-bold ${feedback.score > 90 ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>
-                {feedback.score > 90 ? "تلاوة ممتازة 🌟" : "انتبه للملاحظات 👍"}
-              </div>
-            </div>
-          )}
+          {/* ابحث عن قسم عرض النتيجة (Feedback) واستبدله بهذا التصميم الأكثر حيوية */}
+{feedback && (
+  <div className="w-full animate-fade-in-up space-y-4">
+    {/* دائرة النسبة */}
+    <div className="relative w-32 h-32 mx-auto mb-4 flex items-center justify-center">
+      <svg className="w-full h-full transform -rotate-90">
+        <circle cx="64" cy="64" r="60" stroke="#f3f4f6" strokeWidth="8" fill="transparent" />
+        <circle 
+          cx="64" cy="64" r="60" stroke={feedback.score > 90 ? "#22c55e" : "#eab308"} strokeWidth="8" fill="transparent" 
+          strokeDasharray={377} strokeDashoffset={377 - (377 * (feedback.score || 0)) / 100}
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-extrabold text-gray-800">{feedback.score}%</span>
+        <span className="text-xs text-gray-500">دقة الحفظ</span>
+      </div>
+    </div>
+
+    {/* بطاقات التقييم الإضافية - الروح الجديدة للتحليل */}
+    <div className="grid grid-cols-2 gap-2">
+       <div className="bg-blue-50 p-2 rounded-xl border border-blue-100">
+          <p className="text-[10px] text-blue-600 font-bold mb-1">سرعة التلاوة</p>
+          <p className="text-xs text-gray-700 font-medium">{feedback.speed_evaluation || "جاري التقييم..."}</p>
+       </div>
+       <div className="bg-purple-50 p-2 rounded-xl border border-purple-100">
+          <p className="text-[10px] text-purple-600 font-bold mb-1">ملاحظة التجويد</p>
+          <p className="text-xs text-gray-700 font-medium">{feedback.tajweed_note || "أداء طيب"}</p>
+       </div>
+    </div>
+
+    <div className={`p-3 rounded-xl text-sm font-bold ${feedback.score > 90 ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>
+      {feedback.score > 90 ? "تلاوة ممتازة ومرتلة 🌟" : "تحتاج لتركيز أكثر على المخارج 👍"}
+    </div>
+  </div>
+)}
         </div>
 
         {feedback && feedback.mistakes && feedback.mistakes.length > 0 && (
