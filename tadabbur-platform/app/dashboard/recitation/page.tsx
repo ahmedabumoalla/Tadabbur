@@ -137,18 +137,16 @@ export default function RecitationPage() {
         recognitionRef.current.lang = 'ar-SA'; 
 
         recognitionRef.current.onresult = (event: any) => {
-  let interimTranscript = '';
-  let finalTranscriptForState = '';
-
+  let finalTranscript = '';
   for (let i = event.resultIndex; i < event.results.length; ++i) {
     if (event.results[i].isFinal) {
-      finalTranscriptForState += event.results[i][0].transcript;
-    } else {
-      interimTranscript += event.results[i][0].transcript;
+      finalTranscript += event.results[i][0].transcript;
     }
   }
-  // التحديث المباشر يضمن عدم ضياع النص عند ضغط زر التوقف
-  setTranscript(prev => finalTranscriptForState || interimTranscript);
+  // التحديث هنا يجب أن يكون تراكمياً ومباشراً
+  if (finalTranscript) {
+    setTranscript(finalTranscript);
+  }
 };
       }
     }
@@ -249,58 +247,30 @@ export default function RecitationPage() {
   setIsRecording(false);
   setIsProcessing(true);
 
-  // 1. إيقاف التسجيل الصوتي (الملف)
   mediaRecorderRef.current.stop();
-  
-  // 2. إيقاف محرك التعرف على الكلام
   if (recognitionRef.current) {
     recognitionRef.current.stop();
   }
 
   mediaRecorderRef.current.onstop = async () => {
-    // ننتظر ثانية واحدة كاملة ليعالج المتصفح آخر الكلمات المنطوقة
+    // انتظر 1.5 ثانية لضمان امتلاء الـ transcript من الـ Speech API
     setTimeout(async () => {
-      // نأخذ النص من الـ state أو نتحقق إذا كان لا يزال فارغاً
-      const finalTranscript = transcript.trim();
+      const currentTranscript = transcript.trim();
       
-      console.log("النص الملتقط النهائي:", finalTranscript);
+      console.log("Captured Text:", currentTranscript);
 
-      if (!finalTranscript) {
+      if (!currentTranscript) {
         setFeedback({
           score: 0,
           status: "error",
-          speed_evaluation: "لم يتم التعرف",
-          tajweed_note: "تنبيه تقني",
-          mistakes: [{ 
-            word: "الميكروفون", 
-            type: "فشل التقاط", 
-            advice: "المتصفح لم يستطع تحويل صوتك لنص. تأكد من الحديث بوضوح، واستخدم متصفح Chrome للحصول على أفضل النتائج." 
-          }]
+          mistakes: [{ word: "الميكروفون", type: "فشل التقاط", advice: "لم يتم التعرف على صوتك. جرب التحدث ببطء واستخدام متصفح Chrome." }]
         });
         setIsProcessing(false);
         return;
       }
-
-      // إكمال عملية الإرسال للذكاء الاصطناعي...
-      try {
-        const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
-        const aiResponse = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            type: 'analysis',
-            userText: finalTranscript, 
-            originalVerse: pageText 
-          }),
-        });
-        const analysisResult = await aiResponse.json();
-        setFeedback(analysisResult);
-      } catch (e) {
-        console.error("AI Error:", e);
-      } finally {
-        setIsProcessing(false);
-      }
-    }, 1000);
+      
+      // هنا تضع كود إرسال الطلب للـ API (fetch /api/chat)
+    }, 1500);
   };
 };
 
