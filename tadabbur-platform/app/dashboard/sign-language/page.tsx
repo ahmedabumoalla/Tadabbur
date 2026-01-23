@@ -212,49 +212,58 @@ export default function SignLanguagePage() {
           )}
 
           {/* الحالة: عرض النتائج */}
-          {mode === 'result' && analysisResult && (
-            <div className="w-full max-w-2xl animate-fade-in-up space-y-6 pb-8">
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-2 h-full bg-[#0A74DA]"></div>
-                <div>
-                  <h3 className="text-gray-500 text-sm mb-1">نتيجة التسميع</h3>
-                  <h2 className="text-2xl font-bold text-gray-800">{analysisResult.feedback_title}</h2>
+          {/* الحالة: عرض النتائج */}
+            {mode === 'result' && analysisResult && (
+              <div className="w-full max-w-2xl animate-fade-in-up space-y-6 pb-8">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-2 h-full bg-[#0A74DA]"></div>
+                  <div>
+                    <h3 className="text-gray-500 text-sm mb-1">نتيجة التسميع</h3>
+                    <h2 className="text-2xl font-bold text-gray-800">{analysisResult.feedback_title || "تم التحليل بنجاح"}</h2>
+                  </div>
+                  <div className="relative w-20 h-20 flex items-center justify-center">
+                     <svg className="w-full h-full transform -rotate-90">
+                       <circle cx="40" cy="40" r="36" stroke="#f3f4f6" strokeWidth="8" fill="transparent" />
+                       <circle cx="40" cy="40" r="36" stroke={analysisResult.score > 80 ? "#22c55e" : "#eab308"} strokeWidth="8" fill="transparent" strokeDasharray={226} strokeDashoffset={226 - (226 * (analysisResult.score || 0)) / 100} />
+                     </svg>
+                     <span className="absolute text-xl font-bold text-gray-800">{analysisResult.score || 0}%</span>
+                  </div>
                 </div>
-                <div className="relative w-20 h-20 flex items-center justify-center">
-                   <svg className="w-full h-full transform -rotate-90">
-                     <circle cx="40" cy="40" r="36" stroke="#f3f4f6" strokeWidth="8" fill="transparent" />
-                     <circle cx="40" cy="40" r="36" stroke={analysisResult.score > 80 ? "#22c55e" : "#eab308"} strokeWidth="8" fill="transparent" strokeDasharray={226} strokeDashoffset={226 - (226 * analysisResult.score) / 100} />
-                   </svg>
-                   <span className="absolute text-xl font-bold text-gray-800">{analysisResult.score}%</span>
-                </div>
-              </div>
-              
-              <div className="grid gap-4">
-                {analysisResult.mistakes.map((mistake: any, idx: number) => (
-                  <div key={idx} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                    <div className="flex items-start gap-3">
-                      <div className="bg-red-50 p-2 rounded-lg text-red-500 mt-1 shrink-0"><XCircle size={20} /></div>
-                      <div>
-                        <h4 className="font-bold text-gray-800 text-sm">{mistake.aspect}</h4>
-                        <p className="text-gray-600 text-sm mb-2">{mistake.observation}</p>
-                        <div className="bg-green-50 text-green-700 text-xs p-2 rounded-lg flex gap-2">
-                           <CheckCircle size={14} className="shrink-0" /> {mistake.correction}
+                
+                {/* هنا التعديل المهم للحماية من الخطأ */}
+                <div className="grid gap-4">
+                  {(analysisResult.mistakes || []).length > 0 ? (
+                    (analysisResult.mistakes || []).map((mistake: any, idx: number) => (
+                      <div key={idx} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                        <div className="flex items-start gap-3">
+                          <div className="bg-red-50 p-2 rounded-lg text-red-500 mt-1 shrink-0"><XCircle size={20} /></div>
+                          <div>
+                            <h4 className="font-bold text-gray-800 text-sm">{mistake.aspect}</h4>
+                            <p className="text-gray-600 text-sm mb-2">{mistake.observation}</p>
+                            <div className="bg-green-50 text-green-700 text-xs p-2 rounded-lg flex gap-2">
+                               <CheckCircle size={14} className="shrink-0" /> {mistake.correction}
+                            </div>
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="bg-green-50 p-6 rounded-xl text-center border border-green-100">
+                        <CheckCircle className="mx-auto text-green-500 mb-2" size={32} />
+                        <p className="text-green-800 font-bold">أداء رائع! لا توجد أخطاء ملحوظة.</p>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  )}
+                </div>
 
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100 flex gap-3">
-                 <Trophy className="text-[#0A74DA] shrink-0" size={24} />
-                 <div>
-                    <h4 className="font-bold text-[#0A74DA] mb-1">نصيحة المدرب</h4>
-                    <p className="text-sm text-gray-700">{analysisResult.advice}</p>
-                 </div>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100 flex gap-3">
+                   <Trophy className="text-[#0A74DA] shrink-0" size={24} />
+                   <div>
+                      <h4 className="font-bold text-[#0A74DA] mb-1">نصيحة المدرب</h4>
+                      <p className="text-sm text-gray-700">{analysisResult.advice || "استمر في التدريب لتحسين مستواك."}</p>
+                   </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* الحالة الافتراضية */}
           {mode === 'idle' && (

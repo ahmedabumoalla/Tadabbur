@@ -10,7 +10,6 @@ export default function ChatbotPage() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // النزول لآخر رسالة تلقائياً
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -28,7 +27,7 @@ export default function ChatbotPage() {
     setLoading(true);
 
     try {
-      // 2. إرسال الطلب للذكاء الاصطناعي الحقيقي
+      // 2. إرسال الطلب للذكاء الاصطناعي
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -37,17 +36,19 @@ export default function ChatbotPage() {
 
       const data = await res.json();
 
-      // 3. إضافة رد الذكاء الاصطناعي
-      if (data.response) {
+      // ✅ التعديل هنا: استخدام data.reply بدلاً من data.response
+      if (data.reply) {
         setMessages(prev => [...prev, { 
           id: Date.now() + 1, 
           type: 'bot', 
-          text: data.response 
+          text: data.reply  // <--- تم التصحيح هنا
         }]);
       } else {
+        console.error("No reply found in data:", data); // للمساعدة في اكتشاف الأخطاء
         throw new Error("No response");
       }
     } catch (error) {
+      console.error("Chat Error:", error);
       setMessages(prev => [...prev, { 
         id: Date.now() + 1, 
         type: 'bot', 
@@ -101,7 +102,6 @@ export default function ChatbotPage() {
           onChange={(e) => setInput(e.target.value)}
           placeholder="اسأل عن تفسير، جدول حفظ، أو نصيحة..."
           disabled={loading}
-          // 👇 التعديل هنا: أضفت text-gray-900 و placeholder-gray-400
           className="flex-1 border border-gray-300 rounded-xl px-4 py-4 focus:outline-none focus:border-[#0A74DA] focus:ring-4 focus:ring-[#0A74DA]/10 transition-all disabled:bg-gray-100 text-gray-900 placeholder-gray-400 bg-white"
         />
         <button 
