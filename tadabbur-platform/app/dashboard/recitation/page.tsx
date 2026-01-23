@@ -245,23 +245,31 @@ export default function RecitationPage() {
     setIsProcessing(true);
 
     mediaRecorderRef.current.stop();
-    // إيقاف التعرف على الصوت لضمان الحصول على النص النهائي
-    if (recognitionRef.current) recognitionRef.current.stop();
+    
+    // إيقاف التعرف مع إعطاء فرصة للمتصفح لإنهاء المعالجة
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
 
     mediaRecorderRef.current.onstop = async () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      
-      // ننتظر قليلاً للتأكد من أن تقنية التعرف على الكلام (Transcript) انتهت من المعالجة
+      // ننتظر قليلاً (مثلاً 1.5 ثانية) لضمان أن المتصفح ملأ متغير الـ transcript بالكلمات
       setTimeout(async () => {
         try {
           const finalTranscript = transcript.trim();
           
-          // إذا كان النص فارغاً، نخبر المستخدم بدلاً من إعطاء نتيجة وهمية
-          if (!finalTranscript || finalTranscript === "") {
+          // تشخيص المشكلة: إذا كان النص فارغاً تماماً
+          if (!finalTranscript) {
+            console.error("لم يتم العثور على نص منطوق (Transcript is empty)");
             setFeedback({
               score: 0,
               status: "error",
-              mistakes: [{ word: "تنبيه", type: "صوت غير مسموع", advice: "لم أستطع سماع تلاوتك بوضوح، يرجى المحاولة مرة أخرى في مكان هادئ." }]
+              speed_evaluation: "غير محدد",
+              tajweed_note: "لم يتم التقاط صوت",
+              mistakes: [{ 
+                word: "تنبيه", 
+                type: "عذر تقني", 
+                advice: "تأكد من تفعيل الميكروفون وتحدث بوضوح بعد الضغط على الزر، انتظر ثانية قبل البدء وثانية بعد الانتهاء." 
+              }]
             });
             setIsProcessing(false);
             return;
@@ -274,17 +282,17 @@ export default function RecitationPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
               type: 'analysis',
-              userText: finalTranscript, // إرسال ما قاله المستخدم فعلياً
+              userText: finalTranscript, 
               originalVerse: pageText 
             }),
           });
 
-          if (!aiResponse.ok) throw new Error("فشل الاتصال بالذكاء الاصطناعي");
+          if (!aiResponse.ok) throw new Error("فشل الاتصال بالخادم");
 
           const analysisResult = await aiResponse.json();
           setFeedback(analysisResult);
 
-          // حفظ البيانات في Supabase (نفس الكود الحالي)
+          // حفظ في قاعدة البيانات (اختياري)
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
             await supabase.from('recitations').insert({
@@ -297,11 +305,11 @@ export default function RecitationPage() {
           }
         } catch (error: any) {
           console.error("Process Error:", error);
-          alert(`حدث خطأ أثناء التحليل: ${error.message}`);
+          alert(`خطأ: ${error.message}`);
         } finally {
           setIsProcessing(false);
         }
-      }, 500); // تأخير 500ms لضمان استلام النص
+      }, 1500); // زيادة وقت الانتظار لضمان اكتمال التعرف على الكلام
     };
   };
 
