@@ -137,14 +137,19 @@ export default function RecitationPage() {
         recognitionRef.current.lang = 'ar-SA'; 
 
         recognitionRef.current.onresult = (event: any) => {
-          let finalTranscript = '';
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              finalTranscript += event.results[i][0].transcript;
-            }
-          }
-          if (finalTranscript) setTranscript(finalTranscript);
-        };
+  let interimTranscript = '';
+  let finalTranscriptForState = '';
+
+  for (let i = event.resultIndex; i < event.results.length; ++i) {
+    if (event.results[i].isFinal) {
+      finalTranscriptForState += event.results[i][0].transcript;
+    } else {
+      interimTranscript += event.results[i][0].transcript;
+    }
+  }
+  // التحديث المباشر يضمن عدم ضياع النص عند ضغط زر التوقف
+  setTranscript(prev => finalTranscriptForState || interimTranscript);
+};
       }
     }
   }, []);
@@ -239,79 +244,65 @@ export default function RecitationPage() {
 // ابحث عن دالة stopRecording وقم بتحديث جزء إرسال البيانات (aiResponse) كالتالي:
 
   const stopRecording = async () => {
-    if (!mediaRecorderRef.current) return;
+  if (!mediaRecorderRef.current) return;
 
-    setIsRecording(false);
-    setIsProcessing(true);
+  setIsRecording(false);
+  setIsProcessing(true);
 
-    mediaRecorderRef.current.stop();
-    
-    // إيقاف التعرف مع إعطاء فرصة للمتصفح لإنهاء المعالجة
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+  // 1. إيقاف التسجيل الصوتي (الملف)
+  mediaRecorderRef.current.stop();
+  
+  // 2. إيقاف محرك التعرف على الكلام
+  if (recognitionRef.current) {
+    recognitionRef.current.stop();
+  }
 
-    mediaRecorderRef.current.onstop = async () => {
-      // ننتظر قليلاً (مثلاً 1.5 ثانية) لضمان أن المتصفح ملأ متغير الـ transcript بالكلمات
-      setTimeout(async () => {
-        try {
-          const finalTranscript = transcript.trim();
-          
-          // تشخيص المشكلة: إذا كان النص فارغاً تماماً
-          if (!finalTranscript) {
-            console.error("لم يتم العثور على نص منطوق (Transcript is empty)");
-            setFeedback({
-              score: 0,
-              status: "error",
-              speed_evaluation: "غير محدد",
-              tajweed_note: "لم يتم التقاط صوت",
-              mistakes: [{ 
-                word: "تنبيه", 
-                type: "عذر تقني", 
-                advice: "تأكد من تفعيل الميكروفون وتحدث بوضوح بعد الضغط على الزر، انتظر ثانية قبل البدء وثانية بعد الانتهاء." 
-              }]
-            });
-            setIsProcessing(false);
-            return;
-          }
+  mediaRecorderRef.current.onstop = async () => {
+    // ننتظر ثانية واحدة كاملة ليعالج المتصفح آخر الكلمات المنطوقة
+    setTimeout(async () => {
+      // نأخذ النص من الـ state أو نتحقق إذا كان لا يزال فارغاً
+      const finalTranscript = transcript.trim();
+      
+      console.log("النص الملتقط النهائي:", finalTranscript);
 
-          const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
-          
-          const aiResponse = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              type: 'analysis',
-              userText: finalTranscript, 
-              originalVerse: pageText 
-            }),
-          });
+      if (!finalTranscript) {
+        setFeedback({
+          score: 0,
+          status: "error",
+          speed_evaluation: "لم يتم التعرف",
+          tajweed_note: "تنبيه تقني",
+          mistakes: [{ 
+            word: "الميكروفون", 
+            type: "فشل التقاط", 
+            advice: "المتصفح لم يستطع تحويل صوتك لنص. تأكد من الحديث بوضوح، واستخدم متصفح Chrome للحصول على أفضل النتائج." 
+          }]
+        });
+        setIsProcessing(false);
+        return;
+      }
 
-          if (!aiResponse.ok) throw new Error("فشل الاتصال بالخادم");
-
-          const analysisResult = await aiResponse.json();
-          setFeedback(analysisResult);
-
-          // حفظ في قاعدة البيانات (اختياري)
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase.from('recitations').insert({
-              user_id: user.id,
-              surah_name: currentSurah.name,
-              verse_number: (currentPage - 1) * VERSES_PER_PAGE + 1,
-              ai_score: analysisResult.score || 0,
-              ai_feedback: JSON.stringify(analysisResult)
-            });
-          }
-        } catch (error: any) {
-          console.error("Process Error:", error);
-          alert(`خطأ: ${error.message}`);
-        } finally {
-          setIsProcessing(false);
-        }
-      }, 1500); // زيادة وقت الانتظار لضمان اكتمال التعرف على الكلام
-    };
+      // إكمال عملية الإرسال للذكاء الاصطناعي...
+      try {
+        const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
+        const aiResponse = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'analysis',
+            userText: finalTranscript, 
+            originalVerse: pageText 
+          }),
+        });
+        const analysisResult = await aiResponse.json();
+        setFeedback(analysisResult);
+      } catch (e) {
+        console.error("AI Error:", e);
+      } finally {
+        setIsProcessing(false);
+      }
+    }, 1000);
   };
+};
 
   const filteredSurahs = QURAN_SURAHS.filter(surah => 
     surah.name.includes(searchQuery) || surah.id.toString().includes(searchQuery)
