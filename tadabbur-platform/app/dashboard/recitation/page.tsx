@@ -91,8 +91,7 @@ export default function RecitationPage() {
     const fetchVerses = async () => {
       setIsLoadingVerses(true);
       try {
-        const response = await fetch(`https://api.quran.com/api/v4/quran/verses/uthmani?chapter_number=${currentSurah.id}`);
-        const data = await response.json();
+const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?chapter_number=${currentSurah.id}`);        const data = await response.json();
         
         if (data.verses) {
           setAllVerses(data.verses);
@@ -267,8 +266,7 @@ export default function RecitationPage() {
       }
 
       try {
-        const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
-        
+const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");        
         const aiResponse = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
