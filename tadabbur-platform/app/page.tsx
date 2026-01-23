@@ -203,7 +203,7 @@ export default function HomePage() {
       {/* ================= STATS SECTION ================= */}
       <section className="py-20 bg-[#0f172a] border-t border-white/5">
         <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-12 text-white font-amiri">لماذا يختار الحفاظ منصة تدبُّر؟</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-12 text-white font-amiri">لماذا يختار الحفاظ منصة ادبَّر</h2>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <StatItem number="+10K" label="مستخدم نشط" icon={<User />} />
@@ -232,7 +232,7 @@ export default function HomePage() {
             <a href="#" className="hover:text-[#0A74DA] transition">شروط الاستخدام</a>
             <a href="#" className="hover:text-[#0A74DA] transition">اتصل بنا</a>
           </div>
-          <p className="text-gray-600 text-xs mt-8">جميع الحقوق محفوظة © 2026 تدبُّر</p>
+          <p className="text-gray-600 text-xs mt-8">جميع الحقوق محفوظة © 2026 تدبَّر</p>
         </div>
       </footer>
 

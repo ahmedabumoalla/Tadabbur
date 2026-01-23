@@ -74,7 +74,7 @@ export default function LoginPage() {
         <div className="relative z-20 p-12 text-white text-center max-w-lg">
           <div className="mb-8 flex justify-center animate-fade-in-up">
              <div className="relative w-24 h-24 bg-white/10 backdrop-blur-md rounded-3xl p-4 shadow-2xl border border-white/20">
-                <Image src="/logo.png" alt="شعار تدبر" fill className="object-contain p-3 drop-shadow-lg" />
+                <Image src="/logo.png" alt="شعار تدبَّر" fill className="object-contain p-3 drop-shadow-lg" />
              </div>
           </div>
           <h1 className="text-5xl font-bold mb-6 font-amiri leading-tight">أهلاً بك في منصة تدبُّر</h1>
@@ -98,7 +98,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="lg:hidden flex flex-col items-center mb-8">
              <div className="relative w-16 h-16 mb-4">
-                <Image src="/logo.png" alt="شعار تدبر" fill className="object-contain" />
+                <Image src="/logo.png" alt="شعار تدبَّر" fill className="object-contain" />
              </div>
              <h2 className="text-2xl font-bold text-[#0A74DA] font-amiri">منصة تدبُّر</h2>
           </div>

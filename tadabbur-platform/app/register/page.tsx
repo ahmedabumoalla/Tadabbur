@@ -83,7 +83,7 @@ export default function RegisterPage() {
                 <Image src="/logo.png" alt="شعار تدبر" fill className="object-contain p-3 drop-shadow-lg" />
              </div>
           </div>
-          <h1 className="text-5xl font-bold mb-6 font-amiri leading-tight">انضم لعائلة تدبُّر</h1>
+          <h1 className="text-5xl font-bold mb-6 font-amiri leading-tight">انضم لعائلة تدبَّر</h1>
           <p className="text-xl text-blue-100 leading-relaxed font-light">
             أنشئ حسابك الآن وابدأ رحلة تفاعلية مع القرآن الكريم، واستفد من تقنيات الذكاء الاصطناعي في الحفظ والتلاوة.
           </p>
@@ -104,7 +104,7 @@ export default function RegisterPage() {
              <div className="relative w-16 h-16 mb-4">
                 <Image src="/logo.png" alt="شعار تدبر" fill className="object-contain" />
              </div>
-             <h2 className="text-2xl font-bold text-[#0A74DA] font-amiri">منصة تدبُّر</h2>
+             <h2 className="text-2xl font-bold text-[#0A74DA] font-amiri">منصة تدبَّر</h2>
           </div>
 
           <div className="mb-8">

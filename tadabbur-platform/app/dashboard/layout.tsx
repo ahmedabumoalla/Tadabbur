@@ -61,9 +61,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside 
         className={`
           fixed inset-y-0 right-0 z-50 w-64 bg-white border-l border-gray-200 transition-transform duration-300 ease-in-out
-          md:relative md:translate-x-0 md:flex md:flex-col
+          flex flex-col 
+          md:relative md:translate-x-0 
           ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'} 
-          /* translate-x-full تخفي القائمة لليمين في الشاشات العربية */
         `}
       >
         {/* زر إغلاق القائمة (يظهر فقط في الجوال داخل القائمة) */}
