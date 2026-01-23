@@ -215,64 +215,91 @@ export default function RecitationPage() {
     }
   };
 
+  // --- 1. بدء التسجيل المستقر ---
   const startRecording = async () => {
     try {
       setFeedback(null);
       setTranscript("");
       
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
+      // التأكد من أن المتصفح يدعم التعرف على الكلام
+      if (!recognitionRef.current) {
+        alert("متصفحك لا يدعم التعرف على الكلام، يرجى استخدام Chrome");
+        return;
+      }
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorderRef.current.start();
-      if (recognitionRef.current) recognitionRef.current.start();
-      
+      // تشغيل محرك التعرف على الكلام فقط (بدون MediaRecorder لمنع التصادم في الجوال)
+      recognitionRef.current.start();
       setIsRecording(true);
+      
+      console.log("Speech Recognition started...");
     } catch (err) {
-      console.error("Error accessing microphone:", err);
+      console.error("Mic Error:", err);
       alert("يرجى السماح بالوصول للميكروفون");
     }
   };
 
-  // داخل ملف RecitationPage
-// ابحث عن دالة stopRecording وقم بتحديث جزء إرسال البيانات (aiResponse) كالتالي:
-
+  // --- 2. إيقاف وتحليل مستقر ---
   const stopRecording = async () => {
-  if (!mediaRecorderRef.current) return;
+    if (!isRecording) return;
 
-  setIsRecording(false);
-  setIsProcessing(true);
+    setIsRecording(false);
+    setIsProcessing(true);
 
-  mediaRecorderRef.current.stop();
-  if (recognitionRef.current) {
-    recognitionRef.current.stop();
-  }
+    // إيقاف المحرك
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
 
-  mediaRecorderRef.current.onstop = async () => {
-    // انتظر 1.5 ثانية لضمان امتلاء الـ transcript من الـ Speech API
+    // انتظر قليلاً لضمان وصول النص النهائي
     setTimeout(async () => {
-      const currentTranscript = transcript.trim();
+      const finalTranscript = transcript.trim();
       
-      console.log("Captured Text:", currentTranscript);
+      console.log("Captured Text:", finalTranscript);
 
-      if (!currentTranscript) {
+      if (!finalTranscript) {
         setFeedback({
           score: 0,
           status: "error",
-          mistakes: [{ word: "الميكروفون", type: "فشل التقاط", advice: "لم يتم التعرف على صوتك. جرب التحدث ببطء واستخدام متصفح Chrome." }]
+          mistakes: [{ word: "الميكروفون", type: "فشل التقاط", advice: "لم أسمع تلاوتك. يرجى التحدث بوضوح بعد الضغط على الزر مباشرة." }]
         });
         setIsProcessing(false);
         return;
       }
-      
-      // هنا تضع كود إرسال الطلب للـ API (fetch /api/chat)
-    }, 1500);
+
+      try {
+        const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
+        
+        const aiResponse = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'analysis',
+            userText: finalTranscript, 
+            originalVerse: pageText 
+          }),
+        });
+
+        const analysisResult = await aiResponse.json();
+        setFeedback(analysisResult);
+
+        // حفظ النتيجة فقط في قاعدة البيانات (بدون رابط صوتي لأنه يسبب المشكلة في الجوال)
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('recitations').insert({
+            user_id: user.id,
+            surah_name: currentSurah.name,
+            verse_number: (currentPage - 1) * VERSES_PER_PAGE + 1,
+            ai_score: analysisResult.score || 0,
+            ai_feedback: JSON.stringify(analysisResult)
+          });
+        }
+      } catch (error) {
+        console.error("AI Error:", error);
+      } finally {
+        setIsProcessing(false);
+      }
+    }, 1000);
   };
-};
 
   const filteredSurahs = QURAN_SURAHS.filter(surah => 
     surah.name.includes(searchQuery) || surah.id.toString().includes(searchQuery)
