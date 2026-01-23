@@ -52,47 +52,33 @@ const QURAN_SURAHS = [
 const VERSES_PER_PAGE = 6; 
 
 export default function RecitationPage() {
-  // --- States ---
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [feedback, setFeedback] = useState<any>(null);
-  
-  // 1. متغيرات الصوت
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // 2. متغيرات التفسير (التفسير الميسر)
   const [showTafsir, setShowTafsir] = useState(false);
   const [tafsirData, setTafsirData] = useState<any[]>([]);
   const [loadingTafsir, setLoadingTafsir] = useState(false);
-  
-  // التنقل والبيانات
   const [currentSurah, setCurrentSurah] = useState(QURAN_SURAHS[0]); 
   const [showSurahList, setShowSurahList] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  
-  // بيانات الآيات
   const [allVerses, setAllVerses] = useState<any[]>([]);
   const [displayedVerses, setDisplayedVerses] = useState<any[]>([]);
   const [isLoadingVerses, setIsLoadingVerses] = useState(false);
-  
-  // التصفح
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
-  // التسجيل والتعرف على الصوت
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
   const [transcript, setTranscript] = useState("");
 
-  // --- 1. جلب الآيات ---
   useEffect(() => {
     const fetchVerses = async () => {
       setIsLoadingVerses(true);
       try {
-const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?chapter_number=${currentSurah.id}`);        const data = await response.json();
-        
+        const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?chapter_number=${currentSurah.id}`);
+        const data = await response.json();
         if (data.verses) {
           setAllVerses(data.verses);
           setTotalPages(Math.ceil(data.verses.length / VERSES_PER_PAGE));
@@ -104,11 +90,9 @@ const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?
         setIsLoadingVerses(false);
       }
     };
-
     fetchVerses();
   }, [currentSurah]);
 
-  // إيقاف الصوت عند تغيير السورة
   useEffect(() => {
     if (audioRef.current) {
         audioRef.current.pause();
@@ -116,7 +100,6 @@ const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?
     }
   }, [currentSurah]);
 
-  // --- 2. تحديث الصفحة الحالية ---
   useEffect(() => {
     const startIndex = (currentPage - 1) * VERSES_PER_PAGE;
     const endIndex = startIndex + VERSES_PER_PAGE;
@@ -125,7 +108,6 @@ const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?
     }
   }, [allVerses, currentPage]);
 
-  // --- 3. إعداد التعرف على الصوت (Web Speech API) ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -134,26 +116,21 @@ const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?
         recognitionRef.current.continuous = true;
         recognitionRef.current.interimResults = true;
         recognitionRef.current.lang = 'ar-SA'; 
-
         recognitionRef.current.onresult = (event: any) => {
-  let finalTranscript = '';
-  for (let i = event.resultIndex; i < event.results.length; ++i) {
-    if (event.results[i].isFinal) {
-      finalTranscript += event.results[i][0].transcript;
-    }
-  }
-  // التحديث هنا يجب أن يكون تراكمياً ومباشراً
-  if (finalTranscript) {
-    setTranscript(finalTranscript);
-  }
-};
+          let finalTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            }
+          }
+          if (finalTranscript) {
+            setTranscript(finalTranscript);
+          }
+        };
       }
     }
   }, []);
 
-  // --- Handlers ---
-
-  // دالة تشغيل الصوت (مشاري العفاسي)
   const toggleAudio = () => {
     if (isPlaying) {
       audioRef.current?.pause();
@@ -161,37 +138,27 @@ const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?
     } else {
       const surahId = String(currentSurah.id).padStart(3, '0');
       const audioUrl = `https://server8.mp3quran.net/afs/${surahId}.mp3`;
-      
       if (!audioRef.current || audioRef.current.src !== audioUrl) {
         audioRef.current = new Audio(audioUrl);
       }
-      
       audioRef.current.play();
       setIsPlaying(true);
       audioRef.current.onended = () => setIsPlaying(false);
     }
   };
 
-  // دالة جلب التفسير (المعدلة لاستخدام API QuranEnc)
   const handleShowTafsir = async () => {
     setShowTafsir(true);
     setLoadingTafsir(true);
     try {
-      // استخدام API QuranEnc للتفسير الميسر (أكثر موثوقية)
       const res = await fetch(`https://quranenc.com/api/v1/translation/sura/arabic_moyassar/${currentSurah.id}`);
       const data = await res.json();
-      
-      // حساب أرقام الآيات في الصفحة الحالية
       const startVerse = (currentPage - 1) * VERSES_PER_PAGE + 1;
       const endVerse = currentPage * VERSES_PER_PAGE;
-
-      // تصفية التفسير بناءً على رقم الآية
-      // data.result يحتوي على مصفوفة، كل عنصر له خاصية 'aya' (رقم الآية) و 'translation' (التفسير)
       const filteredTafsir = data.result.filter((item: any) => {
         const verseNum = parseInt(item.aya);
         return verseNum >= startVerse && verseNum <= endVerse;
       });
-      
       setTafsirData(filteredTafsir);
     } catch (error) {
       console.error("فشل جلب التفسير", error);
@@ -214,22 +181,18 @@ const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?
     }
   };
 
-  // --- 1. بدء التسجيل المستقر ---
   const startRecording = async () => {
     try {
       setFeedback(null);
       setTranscript("");
-      
-      // التأكد من أن المتصفح يدعم التعرف على الكلام
-      if (!recognitionRef.current) {
-        alert("متصفحك لا يدعم التعرف على الكلام، يرجى استخدام Chrome");
-        return;
-      }
-
-      // تشغيل محرك التعرف على الكلام فقط (بدون MediaRecorder لمنع التصادم في الجوال)
-      recognitionRef.current.start();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+      mediaRecorderRef.current.start();
       setIsRecording(true);
-      
       console.log("Speech Recognition started...");
     } catch (err) {
       console.error("Mic Error:", err);
@@ -237,42 +200,41 @@ const response = await fetch(`https://api.quran.com/api/v4/quran/verses/indopak?
     }
   };
 
-  // --- 2. إيقاف وتحليل مستقر ---
   const stopRecording = async () => {
-    if (!isRecording) return;
+    if (!isRecording || !mediaRecorderRef.current) return;
 
     setIsRecording(false);
     setIsProcessing(true);
 
-    // إيقاف المحرك
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+    mediaRecorderRef.current.stop();
 
-    // انتظر قليلاً لضمان وصول النص النهائي
-    setTimeout(async () => {
-      const finalTranscript = transcript.trim();
-      
-      console.log("Captured Text:", finalTranscript);
-
-      if (!finalTranscript) {
-        setFeedback({
-          score: 0,
-          status: "error",
-          mistakes: [{ word: "الميكروفون", type: "فشل التقاط", advice: "لم أسمع تلاوتك. يرجى التحدث بوضوح بعد الضغط على الزر مباشرة." }]
-        });
-        setIsProcessing(false);
-        return;
-      }
+    mediaRecorderRef.current.onstop = async () => {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      const formData = new FormData();
+      formData.append("file", audioBlob, "recitation.webm");
+      formData.append("model", "whisper-1");
+      formData.append("language", "ar");
 
       try {
-const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");        
+        // 1. استخراج النص باستخدام Whisper (الدقة العالمية)
+        const transcriptionRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}` },
+          body: formData
+        });
+        
+        const { text: whisperText } = await transcriptionRes.json();
+        console.log("Whisper Transcript:", whisperText);
+
+        const pageText = displayedVerses.map(v => v.text_uthmani).join(" "); 
+
+        // 2. إرسال النص المستخرج للتحليل والمقارنة مع المصحف
         const aiResponse = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             type: 'analysis',
-            userText: finalTranscript, 
+            userText: whisperText, 
             originalVerse: pageText 
           }),
         });
@@ -280,7 +242,7 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
         const analysisResult = await aiResponse.json();
         setFeedback(analysisResult);
 
-        // حفظ النتيجة فقط في قاعدة البيانات (بدون رابط صوتي لأنه يسبب المشكلة في الجوال)
+        // 3. حفظ النتيجة في قاعدة البيانات
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await supabase.from('recitations').insert({
@@ -291,12 +253,13 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
             ai_feedback: JSON.stringify(analysisResult)
           });
         }
+        
       } catch (error) {
-        console.error("AI Error:", error);
+        console.error("Whisper/AI Error:", error);
       } finally {
         setIsProcessing(false);
       }
-    }, 1000);
+    };
   };
 
   const filteredSurahs = QURAN_SURAHS.filter(surah => 
@@ -305,12 +268,10 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)] font-tajawal relative">
-      
       {/* ================= القائمة الجانبية ================= */}
       {showSurahList && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:absolute lg:rounded-3xl" onClick={() => setShowSurahList(false)} />
       )}
-      
       <div className={`fixed lg:absolute top-0 right-0 h-full w-80 bg-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out ${showSurahList ? 'translate-x-0' : 'translate-x-full'} lg:rounded-r-3xl border-l border-gray-100 flex flex-col`}>
         <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-[#fdfbf7]">
           <h3 className="font-bold text-gray-800 font-amiri text-lg">فهرس السور</h3>
@@ -318,7 +279,6 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
             <X size={20} />
           </button>
         </div>
-        
         <div className="p-4 border-b border-gray-100">
           <div className="relative">
             <input 
@@ -331,16 +291,13 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           </div>
         </div>
-
         <div className="flex-1 overflow-y-auto p-2">
           {filteredSurahs.map((surah) => (
             <button 
               key={surah.id}
               onClick={() => { setCurrentSurah(surah); setShowSurahList(false); setFeedback(null); }}
               className={`w-full flex items-center justify-between p-3 rounded-xl mb-1 transition-all ${
-                currentSurah.id === surah.id 
-                  ? "bg-[#0A74DA] text-white shadow-md" 
-                  : "hover:bg-gray-50 text-gray-700"
+                currentSurah.id === surah.id ? "bg-[#0A74DA] text-white shadow-md" : "hover:bg-gray-50 text-gray-700"
               }`}
             >
               <div className="flex items-center gap-3">
@@ -358,23 +315,16 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
 
       {/* ================= القسم الأيمن: المصحف ================= */}
       <div className="flex-1 bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col relative overflow-hidden">
-        
-        {/* الرأس */}
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#fdfbf7]">
           <div className="flex items-center gap-2 md:gap-4">
-            <button 
-              onClick={() => setShowSurahList(true)}
-              className="p-2 hover:bg-gray-200 rounded-xl transition text-gray-700 bg-white border border-gray-200 shadow-sm"
-            >
+            <button onClick={() => setShowSurahList(true)} className="p-2 hover:bg-gray-200 rounded-xl transition text-gray-700 bg-white border border-gray-200 shadow-sm">
               <Menu size={20} />
             </button>
-
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setShowSurahList(true)}>
                <h2 className="text-xl font-bold text-[#0A74DA] font-amiri">سورة {currentSurah.name}</h2>
                <p className="text-xs text-gray-500 hidden md:block">{currentSurah.type} • {allVerses.length} آية</p>
             </div>
           </div>
-          
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-gray-500 font-bold bg-white px-3 py-1.5 rounded-lg border border-gray-100 shadow-sm">
                <span>صفحة {currentPage}</span>
@@ -382,30 +332,17 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
                <span>{totalPages || 1}</span>
             </div>
             <div className="flex gap-1">
-                {/* زر الاستماع */}
-                <button 
-                  onClick={toggleAudio}
-                  className={`p-2 rounded-lg transition ${isPlaying ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0A74DA] hover:bg-blue-100'}`} 
-                  title={isPlaying ? "إيقاف" : "استماع للقارئ"}
-                >
+                <button onClick={toggleAudio} className={`p-2 rounded-lg transition ${isPlaying ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0A74DA] hover:bg-blue-100'}`} title={isPlaying ? "إيقاف" : "استماع للقارئ"}>
                   {isPlaying ? <Square size={20} fill="currentColor" /> : <Volume2 size={20} />}
                 </button>
-                
-                {/* زر التفسير */}
-                <button 
-                  onClick={handleShowTafsir}
-                  className="p-2 text-[#C89B3C] bg-yellow-50 rounded-lg hover:bg-yellow-100 transition" 
-                  title="تفسير الآيات"
-                >
+                <button onClick={handleShowTafsir} className="p-2 text-[#C89B3C] bg-yellow-50 rounded-lg hover:bg-yellow-100 transition" title="تفسير الآيات">
                   <BookOpen size={20} />
                 </button>
             </div>
           </div>
         </div>
 
-        {/* جسم المصحف */}
         <div className="flex-1 flex flex-col items-center justify-start p-8 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] bg-[#fdfbf7] overflow-y-auto custom-scrollbar">
-          
           {isLoadingVerses ? (
             <div className="flex-1 w-full flex items-center justify-center flex-col gap-3">
               <Loader2 className="animate-spin text-[#0A74DA]" size={40} />
@@ -413,100 +350,46 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
             </div>
           ) : (
             <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col">
-              
-              {/* البسملة */}
               {currentPage === 1 && currentSurah.id !== 9 && (
                 <div className="text-center mb-10 pt-4 animate-fade-in">
                   <p className="text-3xl font-amiri text-[#0A74DA] opacity-80">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</p>
                 </div>
               )}
-
-              {/* الآيات */}
-              {/* الآيات - تم تعديلها لتكون مرنة مع نوع النص القادم */}
-<div className="flex-1 space-y-0 animate-fade-in-up">
-  {displayedVerses.map((verse, idx) => {
-    // تحديد النص المتاح (إما إملائي أو عثماني أو نص افتراضي) لضمان عدم حدوث Error
-    const verseText = verse.text_indopak || verse.text_uthmani || verse.text || "";
-
-    return (
-      <p 
-        key={verse.id} 
-        className={`text-center text-3xl md:text-5xl font-amiri transition-all duration-300 cursor-pointer py-4 ${
-          feedback?.mistakes?.some((m: any) => verseText.includes(m.word)) 
-            ? "text-red-600 decoration-red-200 underline decoration-wavy underline-offset-[12px]" 
-            : "text-gray-800 hover:text-[#0A74DA]"
-        }`}
-        style={{ lineHeight: '2' }} 
-      >
-        {currentSurah.id === 1 && idx === 0 
-          ? verseText.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ ", "") 
-          : verseText
-        } 
-        
-        <span className="text-xl mr-3 text-[#C89B3C] font-tajawal border border-[#C89B3C] rounded-full w-9 h-9 inline-flex items-center justify-center pt-1.5 align-middle select-none">
-          {(currentPage - 1) * VERSES_PER_PAGE + idx + 1}
-        </span>
-      </p>
-    );
-  })}
-</div>
+              <div className="flex-1 space-y-0 animate-fade-in-up">
+                {displayedVerses.map((verse, idx) => {
+                  const verseText = verse.text_indopak || verse.text_uthmani || verse.text || "";
+                  return (
+                    <p key={verse.id} className={`text-center text-3xl md:text-5xl font-amiri transition-all duration-300 cursor-pointer py-4 ${feedback?.mistakes?.some((m: any) => verseText.includes(m.word)) ? "text-red-600 decoration-red-200 underline decoration-wavy underline-offset-[12px]" : "text-gray-800 hover:text-[#0A74DA]"}`} style={{ lineHeight: '2' }}>
+                      {currentSurah.id === 1 && idx === 0 ? verseText.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ ", "") : verseText}
+                      <span className="text-xl mr-3 text-[#C89B3C] font-tajawal border border-[#C89B3C] rounded-full w-9 h-9 inline-flex items-center justify-center pt-1.5 align-middle select-none">
+                        {(currentPage - 1) * VERSES_PER_PAGE + idx + 1}
+                      </span>
+                    </p>
+                  );
+                })}
+              </div>
               <div className="h-20"></div>
             </div>
           )}
         </div>
 
-        {/* الشريط السفلي */}
         <div className="p-6 border-t border-gray-100 bg-white flex justify-between items-center relative z-10 px-6 md:px-10">
-          
-          <button 
-            onClick={handlePrevPage} 
-            disabled={currentPage === 1 || isLoadingVerses}
-            className="flex items-center gap-2 text-gray-600 hover:text-[#0A74DA] disabled:opacity-30 disabled:cursor-not-allowed transition"
-          >
+          <button onClick={handlePrevPage} disabled={currentPage === 1 || isLoadingVerses} className="flex items-center gap-2 text-gray-600 hover:text-[#0A74DA] disabled:opacity-30 disabled:cursor-not-allowed transition">
             <ChevronRight size={24} />
             <span className="font-bold hidden md:inline">السابق</span>
           </button>
-
           <div className="relative group -mt-12">
-            {isRecording && (
-              <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20"></div>
-            )}
-            <button 
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isProcessing || isLoadingVerses}
-              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl border-4 border-white transition-all transform hover:scale-105 ${
-                isRecording 
-                  ? "bg-red-500 text-white" 
-                  : isProcessing 
-                    ? "bg-gray-100 text-gray-400 cursor-wait"
-                    : "bg-[#0A74DA] text-white hover:bg-blue-600"
-              }`}
-            >
-              {isProcessing ? (
-                <Loader2 className="animate-spin" size={32} />
-              ) : isRecording ? (
-                <Square size={32} fill="currentColor" />
-              ) : (
-                <Mic size={32} />
-              )}
+            {isRecording && <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20"></div>}
+            <button onClick={isRecording ? stopRecording : startRecording} disabled={isProcessing || isLoadingVerses} className={`w-20 h-20 rounded-full flex items-center justify-center shadow-2xl border-4 border-white transition-all transform hover:scale-105 ${isRecording ? "bg-red-500 text-white" : isProcessing ? "bg-gray-100 text-gray-400 cursor-wait" : "bg-[#0A74DA] text-white hover:bg-blue-600"}`}>
+              {isProcessing ? <Loader2 className="animate-spin" size={32} /> : isRecording ? <Square size={32} fill="currentColor" /> : <Mic size={32} />}
             </button>
           </div>
-
-          <button 
-            onClick={handleNextPage} 
-            disabled={currentPage >= totalPages || isLoadingVerses}
-            className="flex items-center gap-2 text-gray-600 hover:text-[#0A74DA] disabled:opacity-30 disabled:cursor-not-allowed transition"
-          >
+          <button onClick={handleNextPage} disabled={currentPage >= totalPages || isLoadingVerses} className="flex items-center gap-2 text-gray-600 hover:text-[#0A74DA] disabled:opacity-30 disabled:cursor-not-allowed transition">
             <span className="font-bold hidden md:inline">التالي</span>
             <ChevronLeft size={24} />
           </button>
         </div>
-
-        {isRecording && (
-          <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-6 py-2 rounded-full text-sm animate-pulse z-20">
-            جاري الاستماع...
-          </div>
-        )}
+        {isRecording && <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-6 py-2 rounded-full text-sm animate-pulse z-20">جاري الاستماع...</div>}
       </div>
 
       {/* ================= القسم الأيسر: التحليل ================= */}
@@ -521,7 +404,6 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
               <p className="text-sm text-gray-500">اقرأ الآيات الظاهرة بصوت واضح، وسأقوم بتحليل تلاوتك.</p>
             </div>
           )}
-
           {isProcessing && (
              <div className="text-center">
                <Loader2 className="animate-spin text-[#0A74DA] mx-auto mb-4" size={40} />
@@ -529,45 +411,34 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
                <p className="text-xs text-gray-500 mt-2">يتم معالجة الصوت بالذكاء الاصطناعي</p>
              </div>
           )}
-
-          {/* ابحث عن قسم عرض النتيجة (Feedback) واستبدله بهذا التصميم الأكثر حيوية */}
-{feedback && (
-  <div className="w-full animate-fade-in-up space-y-4">
-    {/* دائرة النسبة */}
-    <div className="relative w-32 h-32 mx-auto mb-4 flex items-center justify-center">
-      <svg className="w-full h-full transform -rotate-90">
-        <circle cx="64" cy="64" r="60" stroke="#f3f4f6" strokeWidth="8" fill="transparent" />
-        <circle 
-          cx="64" cy="64" r="60" stroke={feedback.score > 90 ? "#22c55e" : "#eab308"} strokeWidth="8" fill="transparent" 
-          strokeDasharray={377} strokeDashoffset={377 - (377 * (feedback.score || 0)) / 100}
-          className="transition-all duration-1000 ease-out"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-extrabold text-gray-800">{feedback.score}%</span>
-        <span className="text-xs text-gray-500">دقة الحفظ</span>
-      </div>
-    </div>
-
-    {/* بطاقات التقييم الإضافية - الروح الجديدة للتحليل */}
-    <div className="grid grid-cols-2 gap-2">
-       <div className="bg-blue-50 p-2 rounded-xl border border-blue-100">
-          <p className="text-[10px] text-blue-600 font-bold mb-1">سرعة التلاوة</p>
-          <p className="text-xs text-gray-700 font-medium">{feedback.speed_evaluation || "جاري التقييم..."}</p>
-       </div>
-       <div className="bg-purple-50 p-2 rounded-xl border border-purple-100">
-          <p className="text-[10px] text-purple-600 font-bold mb-1">ملاحظة التجويد</p>
-          <p className="text-xs text-gray-700 font-medium">{feedback.tajweed_note || "أداء طيب"}</p>
-       </div>
-    </div>
-
-    <div className={`p-3 rounded-xl text-sm font-bold ${feedback.score > 90 ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>
-      {feedback.score > 90 ? "تلاوة ممتازة ومرتلة 🌟" : "تحتاج لتركيز أكثر على المخارج 👍"}
-    </div>
-  </div>
-)}
+          {feedback && (
+            <div className="w-full animate-fade-in-up space-y-4">
+              <div className="relative w-32 h-32 mx-auto mb-4 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle cx="64" cy="64" r="60" stroke="#f3f4f6" strokeWidth="8" fill="transparent" />
+                  <circle cx="64" cy="64" r="60" stroke={feedback.score > 90 ? "#22c55e" : "#eab308"} strokeWidth="8" fill="transparent" strokeDasharray={377} strokeDashoffset={377 - (377 * (feedback.score || 0)) / 100} className="transition-all duration-1000 ease-out" />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-extrabold text-gray-800">{feedback.score}%</span>
+                  <span className="text-xs text-gray-500">دقة الحفظ</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                 <div className="bg-blue-50 p-2 rounded-xl border border-blue-100">
+                    <p className="text-[10px] text-blue-600 font-bold mb-1">سرعة التلاوة</p>
+                    <p className="text-xs text-gray-700 font-medium">{feedback.speed_evaluation || "جاري التقييم..."}</p>
+                 </div>
+                 <div className="bg-purple-50 p-2 rounded-xl border border-purple-100">
+                    <p className="text-[10px] text-purple-600 font-bold mb-1">ملاحظة التجويد</p>
+                    <p className="text-xs text-gray-700 font-medium">{feedback.tajweed_note || "أداء طيب"}</p>
+                 </div>
+              </div>
+              <div className={`p-3 rounded-xl text-sm font-bold ${feedback.score > 90 ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>
+                {feedback.score > 90 ? "تلاوة ممتازة ومرتلة 🌟" : "تحتاج لتركيز أكثر على المخارج 👍"}
+              </div>
+            </div>
+          )}
         </div>
-
         {feedback && feedback.mistakes && feedback.mistakes.length > 0 && (
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex-1 overflow-y-auto animate-fade-in-up">
             <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -609,7 +480,6 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
                 <X size={24} />
               </button>
             </div>
-
             <div className="flex-1 overflow-y-auto p-6 bg-gray-50 custom-scrollbar">
               {loadingTafsir ? (
                 <div className="flex flex-col items-center justify-center h-40">
