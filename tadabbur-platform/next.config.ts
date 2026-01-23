@@ -1,13 +1,28 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+// استخدام "any" هنا يحل مشكلة الخطأ الأحمر ويجبره على قبول إعدادات eslint
+const nextConfig: any = {
   eslint: {
-    // تحذير: هذا يسمح بإكمال البناء حتى لو وجدت أخطاء ESLint
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // تحذير: هذا يسمح بإكمال البناء حتى لو وجدت أخطاء TypeScript
     ignoreBuildErrors: true,
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+    ],
   },
 };
 
