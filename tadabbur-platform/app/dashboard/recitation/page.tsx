@@ -422,28 +422,34 @@ const pageText = displayedVerses.map(v => v.text_uthmani).join(" ");
               )}
 
               {/* الآيات */}
-              <div className="flex-1 space-y-0 animate-fade-in-up">
-                {displayedVerses.map((verse, idx) => (
-                  <p 
-                    key={verse.id} 
-                    className={`text-center text-3xl md:text-5xl font-amiri transition-all duration-300 cursor-pointer py-4 ${
-                      feedback?.mistakes?.some((m: any) => verse.text_uthmani.includes(m.word)) 
-                        ? "text-red-600 decoration-red-200 underline decoration-wavy underline-offset-[12px]" 
-                        : "text-gray-800 hover:text-[#0A74DA]"
-                    }`}
-                    style={{ lineHeight: '2' }} 
-                  >
-                    {currentSurah.id === 1 && idx === 0 
-                      ? verse.text_uthmani.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ ", "") 
-                      : verse.text_uthmani
-                    } 
-                    
-                    <span className="text-xl mr-3 text-[#C89B3C] font-tajawal border border-[#C89B3C] rounded-full w-9 h-9 inline-flex items-center justify-center pt-1.5 align-middle select-none">
-                      {(currentPage - 1) * VERSES_PER_PAGE + idx + 1}
-                    </span>
-                  </p>
-                ))}
-              </div>
+              {/* الآيات - تم تعديلها لتكون مرنة مع نوع النص القادم */}
+<div className="flex-1 space-y-0 animate-fade-in-up">
+  {displayedVerses.map((verse, idx) => {
+    // تحديد النص المتاح (إما إملائي أو عثماني أو نص افتراضي) لضمان عدم حدوث Error
+    const verseText = verse.text_indopak || verse.text_uthmani || verse.text || "";
+
+    return (
+      <p 
+        key={verse.id} 
+        className={`text-center text-3xl md:text-5xl font-amiri transition-all duration-300 cursor-pointer py-4 ${
+          feedback?.mistakes?.some((m: any) => verseText.includes(m.word)) 
+            ? "text-red-600 decoration-red-200 underline decoration-wavy underline-offset-[12px]" 
+            : "text-gray-800 hover:text-[#0A74DA]"
+        }`}
+        style={{ lineHeight: '2' }} 
+      >
+        {currentSurah.id === 1 && idx === 0 
+          ? verseText.replace("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ ", "") 
+          : verseText
+        } 
+        
+        <span className="text-xl mr-3 text-[#C89B3C] font-tajawal border border-[#C89B3C] rounded-full w-9 h-9 inline-flex items-center justify-center pt-1.5 align-middle select-none">
+          {(currentPage - 1) * VERSES_PER_PAGE + idx + 1}
+        </span>
+      </p>
+    );
+  })}
+</div>
               <div className="h-20"></div>
             </div>
           )}
